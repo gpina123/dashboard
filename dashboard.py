@@ -1,6 +1,7 @@
-#Projeto realizado por Gonçalo Almeida nº100308
+#Projeto realiazado por Gonçalo Almeida nº100308
 #março 24, 2024
 #
+####################### Projeto offline ##########################
 
 import pandas as pd
 import seaborn as sb
@@ -41,13 +42,14 @@ df_raw_2019=df_raw_2019.rename(columns={"Central (kWh)":"Power_kW"})
 df_raw_2019["Date"]=pd.to_datetime(df_raw_2019["Date"],format="%Y-%m-%d %H:%M:%S")
 df_raw_2019=df_raw_2019.set_index('Date', drop=True)
 
-#df_clean_2019= df_raw_2019.drop(columns=["temp_C","HR","windSpeed_m/s","windGust_m/s","pres_mbar","rain_mm/h","rain_day"])
+
+#preparing data from 2019
 df_clean_2019=df_clean_2019.rename(columns={"Central (kWh)":"Power_kW"})
 df_clean_2019["Date"]=pd.to_datetime(df_clean_2019["Date"],format="%Y-%m-%d %H:%M:%S")
 df_clean_2019=df_clean_2019.set_index('Date', drop=True)
 
 
-#preparing data for training
+#preparing data from 2017 and 2018 for training
 df_raw_2017 = pd.read_csv('IST_Central_Pav_2017.csv') # loads a csv file into a dataframe
 df_raw_2018 = pd.read_csv('IST_Central_Pav_2018.csv')
 df_meteo = pd.read_csv('IST_meteo_data_2017_2018_2019.csv')
@@ -85,9 +87,9 @@ df_clean['Power-1week_kW']=df_clean['Power_kW'].shift(168)# the number 168 comes
 df_clean=df_clean.dropna() #drops the nan rows
 df_clean["Power_1stderiv_kW"]=df_clean["Power_kW"]-df_clean["Power-1_kW"]
 
-############################
 
 
+#continuation of data preparation for 2019
 import holidays
 pt_holidays = holidays.PT() #stores all the holidays in Portugal
 
@@ -96,58 +98,25 @@ vacations = ((df_clean_2019.index> "2018-12-31") & (df_clean_2019.index < "2019-
 #creates new column with the information about the weekends, holidays and vacations.
 df_clean_2019["weekend_holiday"] = ((df_clean_2019.index.weekday > 4).astype(int) | (df_clean_2019.index.map(lambda d: d in pt_holidays)).astype(int) | vacations.astype(int))
 df_clean_2019['Power-1_kW']=df_clean_2019['Power_kW'].shift(1) #Previous hour consumption
-#df_clean_2019=df_clean_2019.iloc[:, [0,3,1,2]] #puts both columns of power consuption side by side
 df_clean_2019=df_clean_2019.dropna() #drops the nan row
 df_clean_2019['Power-1week_kW']=df_clean_2019['Power_kW'].shift(168)# the number 168 comes from 7weeks*24hours
-#df_clean_2019=df_clean_2019.iloc[:, [0,1,4,2,3]] #puts both columns of power consuption side by side
 df_clean_2019=df_clean_2019.dropna() #drops the nan rows
 
 df_clean_2019["Power_1stderiv_kW"]=df_clean_2019["Power_kW"]-df_clean_2019["Power-1_kW"]
-#df_clean_2019=df_clean_2019.iloc[:, [0,1,2,5,3,4]]
-
-fig_raw = px.line(df_clean_2019,x=df_clean_2019.index,y="Power_kW")
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+##############################Creating app##############################
+#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.JOURNAL,dbc.themes.BOOTSTRAP,'styles.css'],suppress_callback_exceptions=True,prevent_initial_callbacks='initial_duplicate')
-server=app.server
 
-sticky= {
-        "position": "fixed",
-        "width": "100%",
-        "background-color": "#f1f1f1",
-        #"padding": "10px",
-        "z-index": "1000", #Ensure it's above other content
-        "box-shadow": "0px 2px 5px rgba(0, 0, 0, 0.1)", #Optional: Add shadow for a better look
-        "margin-bottom": "200px",
-        "margin-left":"25px",
-        "margin-right":"25px",
-        "margin-top":"0px"
-    }
-    
-custom_date= {
-    "color": "white",
-    "text-align": "center",
-    "font-size": "4px",
-    "height": "25px",
-    "width": "100%",
-    "padding-left": "3px",
-    "padding-right": "3px",
-}
-
-style_tab_cima={"position":"fixed","z-index": "1000",
-                #"margin-left":"-25px","margin-right":"50px",
-                #"left":"0px","right":"0px",
-                #"padding-left":"0px","padding-right":"0px",
-                "background-color": "#f1f1f1"}
 
 app.layout = dbc.Container([
     dbc.Container([
         dbc.Tabs(children=[
             dbc.Tab(label='Raw Data from 2019', tab_id='tab-1-example-graph'),
             dbc.Tab(label='Feature Selection', tab_id='feature_selection_tab'),
-            dbc.Tab(label='Predict Consumption', tab_id='tab-2-example-graph'),
+            dbc.Tab(label='Forecast Consumption', tab_id='tab-2-example-graph'),
         ], id="tabs", active_tab="tab-1-example-graph"),
         dbc.Row(html.H1('Energy Services Dashboard'),style={"padding-top": "5px"}),
         dbc.Row(dcc.Markdown('''
@@ -162,7 +131,6 @@ app.layout = dbc.Container([
 
 @callback(Output('tabs-content-example-graph', 'children'),
         Input("tabs","active_tab"))
-              #Input('tabs-example-graph', 'value'))
 def render_content(tabs):
     if tabs=="tab-1-example-graph":
         return dbc.Container([
@@ -191,7 +159,6 @@ def render_content(tabs):
                         value='Power_kW')
                     ],
                     body=True,
-                    #className="card text-white bg-info mb-3",
                     style={"margin-top": "25px"},
                 ),
                 dbc.Card([
@@ -211,7 +178,6 @@ def render_content(tabs):
                     ])
                     ],
                         body=True,
-                        #className="card text-white bg-info mb-3",
                         style={"margin-top": "10px"}
                 ),
                 dbc.Card([
@@ -229,7 +195,6 @@ def render_content(tabs):
                     
                 ],
                         body=True,
-                        #className="card text-white bg-info mb-3",
                         style={"margin-top": "10px"})
                 ],
                     width=5
@@ -237,11 +202,8 @@ def render_content(tabs):
                 ),
             
             dbc.Col([dcc.Graph(id='raw_data',className='journal-theme-graph',)]
-                     #style={'width': '50%', 'display': 'inline-block','background-color': "#D3D3D3",
-                           #"margin":"auto"}
             ,width=7)
             ]),
-            #className="bg-primary"
             ]),
             
     
@@ -249,9 +211,10 @@ def render_content(tabs):
     elif tabs=="feature_selection_tab":
         return dbc.Container([
             dbc.Row(dcc.Markdown("### Feature Selection"+
-                                 "\nBefore performing the prediction of the power consuption, it is wise to test which features "+
+                                 "\nBefore performing the forecast of the power consuption, it is wise to test which features "+
                                  "are relevant for building the model."+
-                                 "\n\nThe feature selection uses the data from 2017 and 2018. Depending on the feature selection method, the number of features can be asked.")),
+                                 "\n\nThe feature selection uses the data from 2017 and 2018. Depending on the feature selection method, the number of features can be asked."+
+                                 "\nFour more features were added: Power Consumption 1 day before, Power Consumption 1 week before, Power Consumption first derivative and weekend/holiday.")),
             dbc.Row([
             dbc.Col([
                 dbc.Card([
@@ -276,7 +239,6 @@ def render_content(tabs):
                     style={"display":"Block"}
                 )],
                     body=True,
-                    #className="card text-white bg-info mb-3",
                     style={"margin-top": "10px"})
                 ],width=4),
             dbc.Col([
@@ -300,7 +262,7 @@ def render_content(tabs):
     elif tabs=="tab-2-example-graph":
         return dbc.Container([
             dbc.Row(dcc.Markdown("### Test Regression\n"+
-                                 "In order to predict the power consumption of 2019, we need to first train a regression model based on pre-selected features. "+
+                                 "In order to forecast the power consumption of 2019, we need to first train a regression model based on pre-selected features. "+
                                  "Here, you can train a regression model of your choice and select the features you think that suit best. The pre-selected options were used in my first project." +
                                  "\n\nThe data used to train is correspondent to 2017 and 2018, and is selected randomly. "+
                                  "\nPress the button \"Apply method\" to get your results. Two plots comparing the predicted and real data will appear, as well as a table with the metrics that evaluate the fit.")),
@@ -370,39 +332,8 @@ def render_content(tabs):
         ])
         
 
-#df_metrics.to_dict('records'),[{"name": i, "id": i} for i in df_metrics.columns]
-
-'''
-@app.callback(Output("bar_graph_features","figure"),
-              Input("feature_selection_method_dropdown","value"))
-def feature_methods(feature_method):
-    Z=df_clean_2019.values
-    Y=Z[:,0] #stores the power consumption separately
-    X=Z[:,1:] #stores the other columns
-    
-    traces=[]
-    
-    if feature_method=="SK":
-        features=SelectKBest(k=4,score_func=f_regression) # Test different k number of features. 
-        fit=features.fit(X,Y) #calculates the scores using the score_function f_regression of the features
-        #print(df_clean.columns[1:])
-        print(fit.scores_)
-        #print("Features selected: ")
-        print(fit.get_feature_names_out(input_features=df_clean_2019.columns[1:]))
-        #features_results=fit.transform(X)
-        #print(features_results)
-        traces.append(go.Bar(x=df_clean_2019.columns[1:],
-                             y=fit.scores_))
-    
-
-    layout = go.Layout(title="SelectKBest method using f_regression",
-                       yaxis_title="Score",
-                       xaxis_title="Feature")
-    
-    return {'data': traces, 'layout': layout}
-'''
-
-@app.callback(Output("apply_method","disabled"),
+#callback to disable apply_method button if no feature is selected
+@app.callback(Output("apply_method","disabled",allow_duplicate=True),
               Input("features_variables","value"))
 def turn_off(value):
     if value is None or len(value) == 0:
@@ -410,6 +341,7 @@ def turn_off(value):
     else:
         return False
 
+#callback to make appear/disappear numeric input
 @app.callback(Output("numeric_input","style"),
               Input("feature_selection_method_dropdown","value"))
 def numeric_input(value):
@@ -417,11 +349,19 @@ def numeric_input(value):
         return {"display":"Block"}
     elif value in ["RF"]:
         return {"display":"None"}
+
+#callback to disable apply_method button after being selected
+@app.callback(Output("apply_feature_method","disabled",allow_duplicate=True),
+              Input("apply_feature_method","n_clicks"),
+              prevent_initial_call=True)
+def turn_off_click_tab2(n_clicks):
+    if n_clicks:
+        return True                    
                     
-                    
-#Define callback to build the feature selection results
+#callback to build the feature selection results
 @app.callback([Output("bar_graph_features","children"),
-                Output("loading_button_feature","style")],
+                Output("loading_button_feature","style"),
+                Output("apply_feature_method","disabled")],
               [Input("apply_feature_method","n_clicks")],
               [State("feature_selection_method_dropdown","value"),
               State("numeric_input","value")],
@@ -461,7 +401,7 @@ def feature_methods(n_clicks,feature_method, k_number):
                     yaxis_title="Score",
                     xaxis_title="Feature")
 
-        return dcc.Graph(figure={'data': traces, 'layout': layout}),{"display":"None"}
+        return dcc.Graph(figure={'data': traces, 'layout': layout}),{"display":"None"}, False
     
     
     elif feature_method=="RFE":
@@ -469,7 +409,7 @@ def feature_methods(n_clicks,feature_method, k_number):
         rfe=RFE(model,n_features_to_select=k_number)
         fit=rfe.fit(X,Y)
         
-        return f"The best {k_number} features to be used together are {fit.get_feature_names_out(input_features=df_clean.columns[1:])}",{"display":"None"}
+        return f"The best {k_number} features to be used together are {fit.get_feature_names_out(input_features=df_clean.columns[1:])}",{"display":"None"},False
     
     elif feature_method == "RF":
         model_rf = RandomForestRegressor()
@@ -487,9 +427,10 @@ def feature_methods(n_clicks,feature_method, k_number):
                         yaxis_title="Importance Score",
                         xaxis_title="Feature")
 
-        return dcc.Graph(figure={'data': traces, 'layout': layout}),{"display":"None"}
- 
-#Define callback to create loading button for tab2
+        return dcc.Graph(figure={'data': traces, 'layout': layout}),{"display":"None"},False
+
+
+#callback to create loading button for tab2
 @app.callback(Output("loading_button_feature","style",allow_duplicate=True),
               Input("apply_feature_method", "n_clicks"),
               prevent_initial_call=True)
@@ -498,7 +439,7 @@ def appear_loading_button_feature(n_clicks):
         return {}       
 
 
-#Define callback to create loading button for tab3
+#callback to create loading button for tab3
 @app.callback(Output("loading_button","style",allow_duplicate=True),
               Input("apply_method", "n_clicks"),
               prevent_initial_call=True)
@@ -506,7 +447,7 @@ def appear_loading_button(n_clicks):
     if n_clicks:
         return {}
 
-# Define callback to update the graph based on selected options
+#callback to update the graph on tab1 based on selected options
 @app.callback(
     Output('raw_data', 'figure'),
     [Input('y-values-dropdown', 'value'),
@@ -521,24 +462,26 @@ def update_graph(selected_options,start_date, end_date,type_graph):
             x=df_raw_2019.loc[start_date:end_date].index,
             y=df_raw_2019.loc[start_date:end_date][selected_options],
             mode='lines',
-            #name=selected_options
         ))
+        layout1 = go.Layout(yaxis={"title":"Value"})
     elif "boxplot" in type_graph:
         traces.append(go.Box(
             name=selected_options,
             y=df_raw_2019.loc[start_date:end_date][selected_options],
         ))
+        layout1 = go.Layout(yaxis={"title":"Value"})
     elif "histogram" in type_graph:
         traces.append(go.Histogram(
             x=df_raw_2019.loc[start_date:end_date][selected_options],
             nbinsx=50,
         ))
+        layout1 = go.Layout(xaxis={"title":"Value"},yaxis={"title":"Number of occurences"})
     
 
     if selected_options=="Power_kW":
-        layout = go.Layout(title="Power Consumption in the Central Building (kW)")
+        layout = go.Layout(title="Power Consumption from the Central Building (kW)")
     elif selected_options== "temp_C":
-        layout = go.Layout(title='Power data from 2019',
+        layout = go.Layout(title='Temperature (ºC)',
                        #xaxis={'title': 'X Axis'},
                        #yaxis={'title': 'T'}
                        )
@@ -556,27 +499,12 @@ def update_graph(selected_options,start_date, end_date,type_graph):
         layout = go.Layout(title="Rain (mm/h)")
     else:
         layout = go.Layout(title="Rain day")
+
+    layout.update(layout1)
         
     return {'data': traces, 'layout': layout}
 
-'''
-def update_graph(selected_options,start_date, end_date):
-    traces = []
-    for option in selected_options:
-        traces.append(go.Scatter(
-            x=df_raw_2019.loc[start_date:end_date].index,
-            y=df_raw_2019.loc[start_date:end_date][option],
-            mode='lines',
-            name=option
-        ))
-
-    layout = go.Layout(title='Power data from 2019',
-                       #xaxis={'title': 'X Axis'},
-                       yaxis={'title': 'Power (kW)'})
-
-    return {'data': traces, 'layout': layout}
-'''
-# Define callback to reset the date range when the button is clicked
+#callback to reset the date range when the reset-button button is clicked
 @app.callback(
     [Output('date-picker-range', 'start_date'),
      Output('date-picker-range', 'end_date')],
@@ -590,7 +518,15 @@ def reset_date_range(n_clicks):
     return start_date, end_date
 
 
-#Define callback to make the prediction of the power consumption
+#callback to disable apply_method button after being selected
+@app.callback(Output("apply_method","disabled",allow_duplicate=True),
+              Input("apply_method","n_clicks"),
+              prevent_initial_call=True)
+def turn_off_click_tab3(n_clicks):
+    if n_clicks:
+        return True
+
+#callback to make the forecast of the power consumption
 @app.callback(
     [Output('graph_predict', 'figure'),
     Output('metrics_first','data'),
@@ -600,7 +536,8 @@ def reset_date_range(n_clicks):
     Output("comparison_predict","figure"),
     Output("comparison_predict","style"),
     Output("alert","children"),
-    Output("alert","style")],
+    Output("alert","style"),
+    Output("apply_method","disabled")],
     [Input('apply_method', 'n_clicks')],
     [State('features_variables','value'),
      State('method','value')],
@@ -647,7 +584,7 @@ def make_prediction(n_clicks,selected_features,method_selected):
     elif method_selected=="SV":
         SVR_model= SVR(kernel='rbf')
         SVR_model.fit(X_train,y_train)
-        y_pred= SVR_model.predict(X_test)
+        y_pred= SVR_model.predict(X_2019)
         layout = go.Layout(title="Support Vector regression")
         
         
@@ -685,14 +622,14 @@ def make_prediction(n_clicks,selected_features,method_selected):
         alert=dbc.Alert([
                     html.H4("Well done!", className="alert-heading"),
                     html.P("You achieved good results!"),
-                    html.P(f"|cvRMSE| should be <20%. You got {np.abs(cvRMSE*100):.2f}%"),
-                    html.P(f"|NMBE| should be <5%. You got {np.abs(NMBE*100):.2f}%",style={"margin-top":"5px"})                    
+                    html.P(f"|cvRMSE| should be <20%. You got {np.abs(cvRMSE*100):.2f}%.",style={"margin-bottom":"5px"}),
+                    html.P(f"|NMBE| should be <5%. You got {np.abs(NMBE*100):.2f}%.")                    
         ])
     else:
         alert=dbc.Alert([
                     html.H4("It should be better", className="alert-heading"),
-                    html.P(f"\n|cvRMSE| should be <20%. You got {np.abs(cvRMSE*100):.2f}%"),
-                    html.P(f"\n|NMBE| should be <5%. You got {np.abs(NMBE*100):.2f}%",style={"margin-top":"5px"}),
+                    html.P(f"\n|cvRMSE| should be <20%. You got {np.abs(cvRMSE*100):.2f}%.",style={"margin-bottom":"5px"}),
+                    html.P(f"\n|NMBE| should be <5%. You got {np.abs(NMBE*100):.2f}%."),
                     html.Hr(),
                     html.P(
                         "Try different features and/or methods.",
@@ -708,7 +645,7 @@ def make_prediction(n_clicks,selected_features,method_selected):
     metrics_data_1 = df_metrics_1.to_dict('records')
     metrics_data_2 = df_metrics_2.to_dict('records')
         
-    return {'data': traces, 'layout': layout}, metrics_data_1,metrics_data_2,{}, {"display":"None"},{'data': traces_scatter, 'layout': layout_scatter},{},alert,{}
+    return {'data': traces, 'layout': layout}, metrics_data_1,metrics_data_2,{}, {"display":"None"},{'data': traces_scatter, 'layout': layout_scatter},{},alert,{}, False
 
 if __name__ == '__main__':
-    app.run(port=8050)
+    app.run(debug=True,port=8050)
