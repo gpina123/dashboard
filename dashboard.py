@@ -1,7 +1,7 @@
-#Projeto realiazado por Gonçalo Almeida nº100308
+#Projeto realizado por Gonçalo Almeida nº100308
 #março 24, 2024
 #
-####################### Projeto offline ##########################
+####################### Projeto online ##########################
 
 import pandas as pd
 import seaborn as sb
@@ -109,7 +109,7 @@ df_clean_2019["Power_1stderiv_kW"]=df_clean_2019["Power_kW"]-df_clean_2019["Powe
 #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.JOURNAL,dbc.themes.BOOTSTRAP,'styles.css'],suppress_callback_exceptions=True,prevent_initial_callbacks='initial_duplicate')
-
+server=app.server
 
 app.layout = dbc.Container([
     dbc.Container([
@@ -648,4 +648,4 @@ def make_prediction(n_clicks,selected_features,method_selected):
     return {'data': traces, 'layout': layout}, metrics_data_1,metrics_data_2,{}, {"display":"None"},{'data': traces_scatter, 'layout': layout_scatter},{},alert,{}, False
 
 if __name__ == '__main__':
-    app.run(debug=True,port=8050)
+    app.run()
