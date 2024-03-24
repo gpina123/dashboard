@@ -1,3 +1,7 @@
+#Projeto realizado por Gonçalo Almeida nº100308
+#março 24, 2024
+#
+
 import pandas as pd
 import seaborn as sb
 import numpy as np
