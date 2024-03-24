@@ -711,4 +711,4 @@ def make_prediction(n_clicks,selected_features,method_selected):
     return {'data': traces, 'layout': layout}, metrics_data_1,metrics_data_2,{}, {"display":"None"},{'data': traces_scatter, 'layout': layout_scatter},{},alert,{}
 
 if __name__ == '__main__':
-    app.run(debug=True,port=8050)
+    app.run(port=8050)
