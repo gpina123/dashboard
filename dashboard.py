@@ -107,6 +107,7 @@ fig_raw = px.line(df_clean_2019,x=df_clean_2019.index,y="Power_kW")
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.JOURNAL,dbc.themes.BOOTSTRAP,'styles.css'],suppress_callback_exceptions=True,prevent_initial_callbacks='initial_duplicate')
+server=app.server
 
 sticky= {
         "position": "fixed",
